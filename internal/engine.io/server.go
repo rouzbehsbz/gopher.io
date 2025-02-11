@@ -1,35 +1,83 @@
 package engineio
 
-type Middleware func()
-
-type Transport string
-
-const (
-	TransportPolling      = "polling"
-	TransportWebsocket    = "websocket"
-	TransportWebtransport = "webtransport"
+import (
+	"errors"
+	"net/http"
+	"sync"
 )
 
-type ServerOptions struct {
-	PingTimeout       int
-	PingInterval      int
-	UpgradeTimeout    int
-	MaxHttpBufferSize int
-	AllowRequest      func()
-	Transports        []Transport
-	AllowUpgrades     bool
-}
-
 type Server struct {
-	ClientsCount int
+	sockets      map[string]*Socket
+	socketsCount int
 
-	clients     map[string]*Socket
-	middlewares []Middleware
+	transports map[string]Transporter
+
+	mu sync.Mutex
 }
 
-func NewServer(options ServerOptions) *Server {
+func NewServer() *Server {
 	return &Server{
-		clients:      make(map[string]*Socket),
-		ClientsCount: 0,
+		sockets: make(map[string]*Socket),
 	}
+}
+
+func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
+	eio := r.URL.Query().Get("EIO")
+	sid := r.URL.Query().Get("sid")
+	requestTransport := r.URL.Query().Get("transport")
+
+	if isProtocolVersionSupported := s.isProtocolVersionSupported(eio); isProtocolVersionSupported == false {
+
+	}
+
+	serverTransport, isTransportExists := s.getTransport(requestTransport)
+
+	if !isTransportExists {
+
+	}
+
+	if sid == "" {
+		sid = s.AddSocket()
+	}
+
+	socket, err := s.GetSocket(sid)
+
+	if err != nil {
+
+	}
+
+}
+
+func (s *Server) isProtocolVersionSupported(eio string) bool {
+	return eio == "4"
+}
+
+func (s *Server) getTransport(requestTransport string) (Transporter, bool) {
+	serverTransport, isExists := s.transports[requestTransport]
+
+	return serverTransport, isExists
+}
+
+func (s *Server) AddSocket() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	socket := NewSocket()
+
+	s.sockets[socket.Sid] = socket
+
+	return socket.Sid
+}
+
+func (s *Server) GetSocket(sid string) (*Socket, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	socket, isExists := s.sockets[sid]
+
+	if !isExists {
+		return nil, errors.New("session not found.")
+	}
+
+	return socket, nil
 }
