@@ -3,13 +3,15 @@ package engineio
 import "github.com/google/uuid"
 
 type Socket struct {
-	Sid string
+	Sid       string
+	Transport string
 }
 
-func NewSocket() *Socket {
+func NewSocket(transport string) *Socket {
 	sid := uuid.New().String()
 
 	return &Socket{
-		Sid: sid,
+		Sid:       sid,
+		Transport: transport,
 	}
 }

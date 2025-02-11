@@ -37,12 +37,16 @@ func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if sid == "" {
-		sid = s.AddSocket()
+		sid = s.AddSocket(requestTransport)
 	}
 
 	socket, err := s.GetSocket(sid)
 
 	if err != nil {
+
+	}
+
+	if requestTransport != socket.Transport {
 
 	}
 
@@ -58,11 +62,11 @@ func (s *Server) getTransport(requestTransport string) (Transporter, bool) {
 	return serverTransport, isExists
 }
 
-func (s *Server) AddSocket() string {
+func (s *Server) AddSocket(requestTransport string) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	socket := NewSocket()
+	socket := NewSocket(requestTransport)
 
 	s.sockets[socket.Sid] = socket
 
@@ -80,4 +84,8 @@ func (s *Server) GetSocket(sid string) (*Socket, error) {
 	}
 
 	return socket, nil
+}
+
+func (s *Server) TryUpgradeTransport(requestTransport string) {
+
 }
