@@ -1,6 +1,7 @@
 package engineio
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"sync"
@@ -27,13 +28,15 @@ func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
 	requestTransport := r.URL.Query().Get("transport")
 
 	if isProtocolVersionSupported := s.isProtocolVersionSupported(eio); isProtocolVersionSupported == false {
-
+		s.ErrorResponse(w, UnsupportedProtocolVersionErrorCode)
+		return
 	}
 
 	serverTransport, isTransportExists := s.getTransport(requestTransport)
 
 	if !isTransportExists {
-
+		s.ErrorResponse(w, UnknownTransportErrorCode)
+		return
 	}
 
 	if sid == "" {
@@ -43,11 +46,8 @@ func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
 	socket, err := s.GetSocket(sid)
 
 	if err != nil {
-
-	}
-
-	if requestTransport != socket.Transport {
-
+		s.ErrorResponse(w, UnknownSidErrorCode)
+		return
 	}
 
 }
@@ -86,6 +86,16 @@ func (s *Server) GetSocket(sid string) (*Socket, error) {
 	return socket, nil
 }
 
-func (s *Server) TryUpgradeTransport(requestTransport string) {
+func (s *Server) ErrorResponse(w http.ResponseWriter, errorCode ErrorCode) {
+	message := GetErrorMessage(errorCode)
+	httpStatusCode := GetErrorHttpStatusCode(errorCode)
 
+	appError := AppError{
+		Code:    errorCode,
+		Message: message,
+	}
+
+	bytes, _ := json.Marshal(appError)
+
+	http.Error(w, string(bytes), httpStatusCode)
 }

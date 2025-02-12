@@ -8,4 +8,7 @@ const (
 )
 
 type Transporter interface {
+	Name() string
+	Receive()
+	Send()
 }
