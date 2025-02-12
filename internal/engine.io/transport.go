@@ -1,5 +1,7 @@
 package engineio
 
+import "net/http"
+
 type TransportType string
 
 const (
@@ -9,6 +11,6 @@ const (
 
 type Transporter interface {
 	Name() string
-	Receive()
+	Handle(w http.ResponseWriter, r *http.Request)
 	Send()
 }

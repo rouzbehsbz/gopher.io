@@ -1,17 +1,26 @@
 package engineio
 
-import "github.com/google/uuid"
+import (
+	"net/http"
+
+	"github.com/google/uuid"
+)
 
 type Socket struct {
-	Sid       string
-	Transport string
+	Sid string
+
+	transport Transporter
 }
 
-func NewSocket(transport string) *Socket {
+func NewSocket(transport Transporter) *Socket {
 	sid := uuid.New().String()
 
 	return &Socket{
 		Sid:       sid,
-		Transport: transport,
+		transport: transport,
 	}
+}
+
+func (s *Socket) Handle(w http.ResponseWriter, r *http.Request) {
+	s.transport.Handle(w, r)
 }

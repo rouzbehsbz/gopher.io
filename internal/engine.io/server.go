@@ -7,6 +7,10 @@ import (
 	"sync"
 )
 
+type ServerOpt struct {
+	Transports []Transporter
+}
+
 type Server struct {
 	sockets      map[string]*Socket
 	socketsCount int
@@ -16,10 +20,22 @@ type Server struct {
 	mu sync.Mutex
 }
 
-func NewServer() *Server {
-	return &Server{
-		sockets: make(map[string]*Socket),
+func NewServer(opt ServerOpt) *Server {
+	transports := make(map[string]Transporter)
+
+	for _, transport := range opt.Transports {
+		transports[transport.Name()] = transport
 	}
+
+	return &Server{
+		sockets:    make(map[string]*Socket),
+		transports: transports,
+	}
+}
+
+func (s *Server) Listen(address string) {
+	http.HandleFunc("/engine.io/", s.HandleHandshake)
+	http.ListenAndServe(address, nil)
 }
 
 func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +56,7 @@ func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if sid == "" {
-		sid = s.AddSocket(requestTransport)
+		sid = s.AddSocket(serverTransport)
 	}
 
 	socket, err := s.GetSocket(sid)
@@ -50,6 +66,7 @@ func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	socket.Handle(w, r)
 }
 
 func (s *Server) isProtocolVersionSupported(eio string) bool {
@@ -62,11 +79,11 @@ func (s *Server) getTransport(requestTransport string) (Transporter, bool) {
 	return serverTransport, isExists
 }
 
-func (s *Server) AddSocket(requestTransport string) string {
+func (s *Server) AddSocket(transport Transporter) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	socket := NewSocket(requestTransport)
+	socket := NewSocket(transport)
 
 	s.sockets[socket.Sid] = socket
 
