@@ -6,28 +6,29 @@ import (
 	"github.com/google/uuid"
 )
 
-type NewSessionMessage struct {
-	Sid          string   `json:"sid"`
-	Upgrades     []string `json:"upgrades"`
-	PingInterval int      `json:"pingInterval"`
-	PingTimeout  int      `json:"pingTimeout"`
-	MaxPayload   int      `json:"maxPayload"`
-}
-
 type Socket struct {
 	Sid       string
 	Transport Transporter
+
+	w http.ResponseWriter
+	r *http.Request
 }
 
-func NewSocket(transport Transporter) *Socket {
+func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter) *Socket {
 	sid := uuid.New().String()
 
 	return &Socket{
 		Sid:       sid,
 		Transport: transport,
+		w:         w,
+		r:         r,
 	}
 }
 
-func (s *Socket) Handle(w http.ResponseWriter, r *http.Request) {
-	s.Transport.Handle(w, r)
+func (s *Socket) Handle() {
+	s.Transport.Handle(s.w, s.r)
+}
+
+func (s *Socket) Send(packet Packet) {
+	s.Transport.Send(s.w, s.r, packet)
 }

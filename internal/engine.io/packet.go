@@ -30,7 +30,7 @@ func NewPacket(_type PacketType, rawData any) *Packet {
 	}
 }
 
-func (p *Packet) EncodePacket(isBinarySupported bool) ([]byte, error) {
+func (p *Packet) Encode(isBinarySupported bool) ([]byte, error) {
 	buffer, err := p.toBuffer()
 
 	if err != nil {

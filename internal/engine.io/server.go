@@ -7,6 +7,14 @@ import (
 	"sync"
 )
 
+type NewSessionMessage struct {
+	Sid          string   `json:"sid"`
+	Upgrades     []string `json:"upgrades"`
+	PingInterval int      `json:"pingInterval"`
+	PingTimeout  int      `json:"pingTimeout"`
+	MaxPayload   int      `json:"maxPayload"`
+}
+
 type ServerOpt struct {
 	Transports []Transporter
 }
@@ -38,11 +46,12 @@ func NewServer(opt ServerOpt) *Server {
 	}
 
 	return &Server{
-		sockets:      make(map[string]*Socket),
-		transports:   transports,
-		pingInterval: 25000,
-		pintTimeout:  20000,
-		maxPayload:   1000000,
+		sockets:        make(map[string]*Socket),
+		transports:     transports,
+		transportNames: transportNames,
+		pingInterval:   25000,
+		pintTimeout:    20000,
+		maxPayload:     1000000,
 	}
 }
 
@@ -69,7 +78,7 @@ func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if sid == "" {
-		newSid, err := s.AddSocket(serverTransport)
+		newSid, err := s.AddSocket(w, r, serverTransport)
 
 		if err != nil {
 			s.ErrorResponse(w, BadRequestErrorCode)
@@ -86,7 +95,7 @@ func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	socket.Handle(w, r)
+	socket.Handle()
 }
 
 func (s *Server) isProtocolVersionSupported(eio string) bool {
@@ -99,15 +108,15 @@ func (s *Server) getTransport(requestTransport string) (Transporter, bool) {
 	return serverTransport, isExists
 }
 
-func (s *Server) AddSocket(transport Transporter) (string, error) {
+func (s *Server) AddSocket(w http.ResponseWriter, r *http.Request, transport Transporter) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	socket := NewSocket(transport)
+	socket := NewSocket(w, r, transport)
 
 	s.sockets[socket.Sid] = socket
 
-	if err := socket.Transport.Send(Packet{
+	socket.Send(Packet{
 		Type: PacketOpenType,
 		RawData: NewSessionMessage{
 			Sid:          socket.Sid,
@@ -116,9 +125,7 @@ func (s *Server) AddSocket(transport Transporter) (string, error) {
 			PingTimeout:  s.pintTimeout,
 			MaxPayload:   s.maxPayload,
 		},
-	}); err != nil {
-		return "", err
-	}
+	})
 
 	return socket.Sid, nil
 }

@@ -21,6 +21,18 @@ func (p *PollingTransport) Handle(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (p *PollingTransport) Send(packet engineio.Packet) error {
-	return nil
+func (p *PollingTransport) Send(w http.ResponseWriter, r *http.Request, packet engineio.Packet) {
+	encodedPacket, err := packet.Encode(true)
+
+	if err != nil {
+		http.Error(w, "can't parse the packet.", 400)
+		return
+	}
+
+	_, err = w.Write(encodedPacket)
+
+	if err != nil {
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		return
+	}
 }
