@@ -15,7 +15,12 @@ type Server struct {
 	sockets      map[string]*Socket
 	socketsCount int
 
-	transports map[string]Transporter
+	transports     map[string]Transporter
+	transportNames []string
+
+	pingInterval int
+	pintTimeout  int
+	maxPayload   int
 
 	mu sync.Mutex
 }
@@ -23,13 +28,21 @@ type Server struct {
 func NewServer(opt ServerOpt) *Server {
 	transports := make(map[string]Transporter)
 
+	var transportNames []string
+
 	for _, transport := range opt.Transports {
-		transports[transport.Name()] = transport
+		name := transport.Name()
+
+		transports[name] = transport
+		transportNames = append(transportNames, name)
 	}
 
 	return &Server{
-		sockets:    make(map[string]*Socket),
-		transports: transports,
+		sockets:      make(map[string]*Socket),
+		transports:   transports,
+		pingInterval: 25000,
+		pintTimeout:  20000,
+		maxPayload:   1000000,
 	}
 }
 
@@ -56,7 +69,14 @@ func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if sid == "" {
-		sid = s.AddSocket(serverTransport)
+		newSid, err := s.AddSocket(serverTransport)
+
+		if err != nil {
+			s.ErrorResponse(w, BadRequestErrorCode)
+			return
+		}
+
+		sid = newSid
 	}
 
 	socket, err := s.GetSocket(sid)
@@ -79,7 +99,7 @@ func (s *Server) getTransport(requestTransport string) (Transporter, bool) {
 	return serverTransport, isExists
 }
 
-func (s *Server) AddSocket(transport Transporter) string {
+func (s *Server) AddSocket(transport Transporter) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -87,7 +107,20 @@ func (s *Server) AddSocket(transport Transporter) string {
 
 	s.sockets[socket.Sid] = socket
 
-	return socket.Sid
+	if err := socket.Transport.Send(Packet{
+		Type: PacketOpenType,
+		RawData: NewSessionMessage{
+			Sid:          socket.Sid,
+			Upgrades:     s.transportNames,
+			PingInterval: s.pingInterval,
+			PingTimeout:  s.pintTimeout,
+			MaxPayload:   s.maxPayload,
+		},
+	}); err != nil {
+		return "", err
+	}
+
+	return socket.Sid, nil
 }
 
 func (s *Server) GetSocket(sid string) (*Socket, error) {

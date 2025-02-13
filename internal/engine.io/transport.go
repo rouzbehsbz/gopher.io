@@ -12,5 +12,5 @@ const (
 type Transporter interface {
 	Name() string
 	Handle(w http.ResponseWriter, r *http.Request)
-	Send()
+	Send(packet Packet) error
 }

@@ -44,6 +44,10 @@ func (p *Packet) EncodePacket(isBinarySupported bool) ([]byte, error) {
 	return append([]byte("b"), []byte(base64.StdEncoding.EncodeToString(buffer))...), nil
 }
 
+func DecodePacket(rawData []byte) (*Packet, error) {
+	return nil, nil
+}
+
 func (p *Packet) toBuffer() ([]byte, error) {
 	switch v := p.RawData.(type) {
 	case []byte:

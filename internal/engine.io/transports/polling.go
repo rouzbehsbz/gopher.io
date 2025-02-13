@@ -20,3 +20,7 @@ func (p *PollingTransport) Name() string {
 func (p *PollingTransport) Handle(w http.ResponseWriter, r *http.Request) {
 
 }
+
+func (p *PollingTransport) Send(packet engineio.Packet) error {
+	return nil
+}

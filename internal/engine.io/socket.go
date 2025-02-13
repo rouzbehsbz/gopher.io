@@ -6,10 +6,17 @@ import (
 	"github.com/google/uuid"
 )
 
-type Socket struct {
-	Sid string
+type NewSessionMessage struct {
+	Sid          string   `json:"sid"`
+	Upgrades     []string `json:"upgrades"`
+	PingInterval int      `json:"pingInterval"`
+	PingTimeout  int      `json:"pingTimeout"`
+	MaxPayload   int      `json:"maxPayload"`
+}
 
-	transport Transporter
+type Socket struct {
+	Sid       string
+	Transport Transporter
 }
 
 func NewSocket(transport Transporter) *Socket {
@@ -17,10 +24,10 @@ func NewSocket(transport Transporter) *Socket {
 
 	return &Socket{
 		Sid:       sid,
-		transport: transport,
+		Transport: transport,
 	}
 }
 
 func (s *Socket) Handle(w http.ResponseWriter, r *http.Request) {
-	s.transport.Handle(w, r)
+	s.Transport.Handle(w, r)
 }
