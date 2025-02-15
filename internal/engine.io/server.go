@@ -112,7 +112,11 @@ func (s *Server) AddSocket(w http.ResponseWriter, r *http.Request, transport Tra
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	socket := NewSocket(w, r, transport)
+	socket, err := NewSocket(w, r, transport)
+
+	if err != nil {
+		return "", nil
+	}
 
 	s.sockets[socket.Sid] = socket
 

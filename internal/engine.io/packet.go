@@ -1,21 +1,20 @@
 package engineio
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 )
 
-type PacketType int
+type PacketType string
 
 const (
-	PacketOpenType = iota
-	PacketCloseType
-	PacketPingType
-	PacketPongType
-	PacketMessageType
-	PacketUpgradeType
-	PacketNoopType
+	PacketOpenType    = "0"
+	PacketCloseType   = "1"
+	PacketPingType    = "2"
+	PacketPongType    = "3"
+	PacketMessageType = "4"
+	PacketUpgradeType = "5"
+	PacketNoopType    = "6"
 )
 
 type Packet struct {
@@ -30,25 +29,21 @@ func NewPacket(_type PacketType, rawData any) *Packet {
 	}
 }
 
-func (p *Packet) Encode(isBinarySupported bool) ([]byte, error) {
-	buffer, err := p.toBuffer()
+func (p *Packet) Encode() ([]byte, error) {
+	buffer, err := p.rawDataToBuffer()
 
 	if err != nil {
 		return nil, err
 	}
 
-	if isBinarySupported {
-		return buffer, nil
-	}
-
-	return append([]byte("b"), []byte(base64.StdEncoding.EncodeToString(buffer))...), nil
+	return append([]byte(p.Type), buffer...), nil
 }
 
 func DecodePacket(rawData []byte) (*Packet, error) {
 	return nil, nil
 }
 
-func (p *Packet) toBuffer() ([]byte, error) {
+func (p *Packet) rawDataToBuffer() ([]byte, error) {
 	switch v := p.RawData.(type) {
 	case []byte:
 		return v, nil

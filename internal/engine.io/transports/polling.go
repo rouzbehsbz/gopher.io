@@ -22,7 +22,7 @@ func (p *PollingTransport) Handle(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *PollingTransport) Send(w http.ResponseWriter, r *http.Request, packet engineio.Packet) {
-	encodedPacket, err := packet.Encode(true)
+	encodedPacket, err := packet.Encode()
 
 	if err != nil {
 		http.Error(w, "can't parse the packet.", 400)
