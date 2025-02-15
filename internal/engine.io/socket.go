@@ -28,12 +28,9 @@ func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter) (*
 		return nil, err
 	}
 
-	return &Socket{
-		Sid:       sid,
-		Transport: transport,
-		w:         w,
-		r:         r,
-	}, nil
+	s.Sid = sid
+
+	return s, nil
 }
 
 func (s *Socket) generateSid() (string, error) {
