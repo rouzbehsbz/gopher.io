@@ -96,7 +96,7 @@ func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	socket.Handle()
+	socket.Handle(w, r)
 }
 
 func (s *Server) isProtocolVersionSupported(eio string) bool {

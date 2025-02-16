@@ -52,7 +52,10 @@ func (s *Socket) generateSid() (string, error) {
 	return sid, nil
 }
 
-func (s *Socket) Handle() {
+func (s *Socket) Handle(w http.ResponseWriter, r *http.Request) {
+	s.W = w
+	s.R = r
+
 	s.Transport.Handle(s)
 }
 
@@ -69,12 +72,8 @@ func (s *Socket) heartbeat(pingInterval time.Duration) {
 		select {
 		case <-ticker.C:
 			s.Send(Packet{
-				Type: PacketPingType,
-				RawData: struct {
-					Name string `json:"name"`
-				}{
-					Name: "rouzbeh",
-				},
+				Type:    PacketPingType,
+				RawData: []byte{},
 			})
 		}
 	}

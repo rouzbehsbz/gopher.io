@@ -41,9 +41,7 @@ func (p *PollingTransport) Handle(s *engineio.Socket) {
 
 		s.W.Header().Set("Content-Type", "text/plain; charset=UTF-8")
 
-		if _, err := s.W.Write(encodedPackets); err != nil {
-			println(err.Error())
-		}
+		s.W.Write(encodedPackets)
 
 		break
 	}
