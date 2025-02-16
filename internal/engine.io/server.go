@@ -5,12 +5,13 @@ import (
 	"errors"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type NewSessionMessage struct {
 	Sid          string   `json:"sid"`
 	Upgrades     []string `json:"upgrades"`
-	PingInterval int      `json:"pingInterval"`
+	PingInterval int64    `json:"pingInterval"`
 	PingTimeout  int      `json:"pingTimeout"`
 	MaxPayload   int      `json:"maxPayload"`
 }
@@ -26,8 +27,8 @@ type Server struct {
 	transports     map[string]Transporter
 	transportNames []string
 
-	pingInterval int
-	pintTimeout  int
+	pingInterval time.Duration
+	pingTimeout  int
 	maxPayload   int
 
 	mu sync.Mutex
@@ -49,8 +50,8 @@ func NewServer(opt ServerOpt) *Server {
 		sockets:        make(map[string]*Socket),
 		transports:     transports,
 		transportNames: transportNames,
-		pingInterval:   25000,
-		pintTimeout:    20000,
+		pingInterval:   10000,
+		pingTimeout:    20000,
 		maxPayload:     1000000,
 	}
 }
@@ -112,7 +113,7 @@ func (s *Server) AddSocket(w http.ResponseWriter, r *http.Request, transport Tra
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	socket, err := NewSocket(w, r, transport)
+	socket, err := NewSocket(w, r, transport, s.pingInterval)
 
 	if err != nil {
 		return "", nil
@@ -125,8 +126,8 @@ func (s *Server) AddSocket(w http.ResponseWriter, r *http.Request, transport Tra
 		RawData: NewSessionMessage{
 			Sid:          socket.Sid,
 			Upgrades:     s.transportNames,
-			PingInterval: s.pingInterval,
-			PingTimeout:  s.pintTimeout,
+			PingInterval: s.pingInterval.Milliseconds(),
+			PingTimeout:  s.pingTimeout,
 			MaxPayload:   s.maxPayload,
 		},
 	})

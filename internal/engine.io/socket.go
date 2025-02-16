@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type Socket struct {
@@ -16,7 +17,7 @@ type Socket struct {
 	ReceivingPackets chan Packet
 }
 
-func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter) (*Socket, error) {
+func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter, pingInterval time.Duration) (*Socket, error) {
 	s := &Socket{
 		Transport:        transport,
 		W:                w,
@@ -31,6 +32,7 @@ func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter) (*
 		return nil, err
 	}
 
+	go s.heartbeat(pingInterval)
 	s.Sid = sid
 
 	return s, nil
@@ -56,4 +58,24 @@ func (s *Socket) Handle() {
 
 func (s *Socket) Send(packet Packet) {
 	s.SendingPackets <- packet
+}
+
+func (s *Socket) heartbeat(pingInterval time.Duration) {
+	ticker := time.NewTicker(pingInterval * time.Millisecond)
+
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			s.Send(Packet{
+				Type: PacketPingType,
+				RawData: struct {
+					Name string `json:"name"`
+				}{
+					Name: "rouzbeh",
+				},
+			})
+		}
+	}
 }

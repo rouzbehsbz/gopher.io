@@ -19,9 +19,6 @@ func (p *PollingTransport) Name() string {
 
 func (p *PollingTransport) Handle(s *engineio.Socket) {
 	switch s.R.Method {
-	case http.MethodPost:
-		break
-
 	case http.MethodGet:
 		firstPacket := <-s.SendingPackets
 		packets := []engineio.Packet{firstPacket}
@@ -29,8 +26,8 @@ func (p *PollingTransport) Handle(s *engineio.Socket) {
 	CollectLoop:
 		for {
 			select {
-			case pkt := <-s.SendingPackets:
-				packets = append(packets, pkt)
+			case packet := <-s.SendingPackets:
+				packets = append(packets, packet)
 			default:
 				break CollectLoop
 			}
@@ -43,6 +40,11 @@ func (p *PollingTransport) Handle(s *engineio.Socket) {
 		}
 
 		s.W.Header().Set("Content-Type", "text/plain; charset=UTF-8")
-		s.W.Write(encodedPackets)
+
+		if _, err := s.W.Write(encodedPackets); err != nil {
+			println(err.Error())
+		}
+
+		break
 	}
 }

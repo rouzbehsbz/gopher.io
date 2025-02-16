@@ -24,13 +24,6 @@ type Packet struct {
 	RawData any
 }
 
-func NewPacket(_type PacketType, rawData any) *Packet {
-	return &Packet{
-		Type:    _type,
-		RawData: rawData,
-	}
-}
-
 func (p *Packet) Encode() ([]byte, error) {
 	buffer, err := p.rawDataToBuffer()
 
