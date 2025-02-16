@@ -17,7 +17,7 @@ type Socket struct {
 	ReceivingPackets chan Packet
 }
 
-func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter, pingInterval time.Duration) (*Socket, error) {
+func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter, pingInterval time.Duration, pingTimeout time.Duration) (*Socket, error) {
 	s := &Socket{
 		Transport:        transport,
 		W:                w,
@@ -32,7 +32,7 @@ func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter, pi
 		return nil, err
 	}
 
-	go s.heartbeat(pingInterval)
+	go s.heartbeat(pingInterval, pingTimeout)
 	s.Sid = sid
 
 	return s, nil
@@ -63,7 +63,7 @@ func (s *Socket) Send(packet Packet) {
 	s.SendingPackets <- packet
 }
 
-func (s *Socket) heartbeat(pingInterval time.Duration) {
+func (s *Socket) heartbeat(pingInterval time.Duration, pingTimeout time.Duration) {
 	ticker := time.NewTicker(pingInterval * time.Millisecond)
 
 	defer ticker.Stop()
