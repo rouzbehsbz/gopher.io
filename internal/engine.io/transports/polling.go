@@ -23,17 +23,26 @@ func (p *PollingTransport) Handle(s *engineio.Socket) {
 		break
 
 	case http.MethodGet:
-		packets := s.Packets()
-		encodedPakcets, err := engineio.EncodePackets(packets)
+		firstPacket := <-s.SendingPackets
+		packets := []engineio.Packet{firstPacket}
 
+	CollectLoop:
+		for {
+			select {
+			case pkt := <-s.SendingPackets:
+				packets = append(packets, pkt)
+			default:
+				break CollectLoop
+			}
+		}
+
+		encodedPackets, err := engineio.EncodePackets(packets)
 		if err != nil {
-			http.Error(s.W, "can't parse the packet.", 400)
+			http.Error(s.W, "can't encode the packet.", http.StatusInternalServerError)
 			return
 		}
 
 		s.W.Header().Set("Content-Type", "text/plain; charset=UTF-8")
-
-		s.W.Write(encodedPakcets)
-		break
+		s.W.Write(encodedPackets)
 	}
 }
