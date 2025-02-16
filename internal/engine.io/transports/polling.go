@@ -17,22 +17,23 @@ func (p *PollingTransport) Name() string {
 	return engineio.TransportPollingType
 }
 
-func (p *PollingTransport) Handle(w http.ResponseWriter, r *http.Request) {
+func (p *PollingTransport) Handle(s *engineio.Socket) {
+	switch s.R.Method {
+	case http.MethodPost:
+		break
 
-}
+	case http.MethodGet:
+		packets := s.Packets()
+		encodedPakcets, err := engineio.EncodePackets(packets)
 
-func (p *PollingTransport) Send(w http.ResponseWriter, r *http.Request, packet engineio.Packet) {
-	encodedPacket, err := packet.Encode()
+		if err != nil {
+			http.Error(s.W, "can't parse the packet.", 400)
+			return
+		}
 
-	if err != nil {
-		http.Error(w, "can't parse the packet.", 400)
-		return
-	}
+		s.W.Header().Set("Content-Type", "text/plain; charset=UTF-8")
 
-	_, err = w.Write(encodedPacket)
-
-	if err != nil {
-		http.Error(w, "Failed to write response", http.StatusInternalServerError)
-		return
+		s.W.Write(encodedPakcets)
+		break
 	}
 }

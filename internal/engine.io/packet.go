@@ -7,6 +7,8 @@ import (
 
 type PacketType string
 
+const SeperatorCharacter = 0x1e
+
 const (
 	PacketOpenType    = "0"
 	PacketCloseType   = "1"
@@ -58,4 +60,24 @@ func (p *Packet) rawDataToBuffer() ([]byte, error) {
 
 		return b, nil
 	}
+}
+
+func EncodePackets(packets []Packet) ([]byte, error) {
+	var bytes []byte
+
+	for i, packet := range packets {
+		encodedPacket, err := packet.Encode()
+
+		if err != nil {
+			return nil, err
+		}
+
+		bytes = append(bytes, encodedPacket...)
+
+		if i < len(packets)-1 {
+			bytes = append(bytes, SeperatorCharacter)
+		}
+	}
+
+	return bytes, nil
 }

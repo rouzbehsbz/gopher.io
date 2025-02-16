@@ -5,21 +5,24 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strings"
+	"sync"
 )
 
 type Socket struct {
 	Sid       string
 	Transport Transporter
+	W         http.ResponseWriter
+	R         *http.Request
 
-	w http.ResponseWriter
-	r *http.Request
+	packets []Packet
+	mu      sync.Mutex
 }
 
 func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter) (*Socket, error) {
 	s := &Socket{
 		Transport: transport,
-		w:         w,
-		r:         r,
+		W:         w,
+		R:         r,
 	}
 
 	sid, err := s.generateSid()
@@ -48,9 +51,24 @@ func (s *Socket) generateSid() (string, error) {
 }
 
 func (s *Socket) Handle() {
-	s.Transport.Handle(s.w, s.r)
+	s.Transport.Handle(s)
 }
 
 func (s *Socket) Send(packet Packet) {
-	s.Transport.Send(s.w, s.r, packet)
+	s.mu.Lock()
+
+	defer s.mu.Unlock()
+
+	s.packets = append(s.packets, packet)
+}
+
+func (s *Socket) Packets() []Packet {
+	s.mu.Lock()
+
+	defer s.mu.Unlock()
+
+	packets := s.packets
+	s.packets = []Packet{}
+
+	return packets
 }
