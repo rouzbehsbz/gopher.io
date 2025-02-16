@@ -19,6 +19,12 @@ func (p *PollingTransport) Name() string {
 
 func (p *PollingTransport) Handle(s *engineio.Socket) {
 	switch s.R.Method {
+	case http.MethodPost:
+		s.W.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+		s.W.Write([]byte("ok"))
+
+		break
+
 	case http.MethodGet:
 		firstPacket := <-s.SendingPackets
 		packets := []engineio.Packet{firstPacket}
