@@ -1,6 +1,7 @@
 package engineio
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 )
@@ -34,10 +35,6 @@ func (p *Packet) Encode() ([]byte, error) {
 	return append([]byte(p.Type), buffer...), nil
 }
 
-func DecodePacket(rawData []byte) (*Packet, error) {
-	return nil, nil
-}
-
 func (p *Packet) rawDataToBuffer() ([]byte, error) {
 	switch v := p.RawData.(type) {
 	case []byte:
@@ -53,6 +50,20 @@ func (p *Packet) rawDataToBuffer() ([]byte, error) {
 
 		return b, nil
 	}
+}
+
+func BufferToRawDate(buffer []byte) any {
+	var v any
+
+	if err := json.Unmarshal(buffer, &v); err == nil {
+		return v
+	}
+
+	if str := string(buffer); str != "" {
+		return str
+	}
+
+	return buffer
 }
 
 func EncodePackets(packets []Packet) ([]byte, error) {
@@ -73,4 +84,24 @@ func EncodePackets(packets []Packet) ([]byte, error) {
 	}
 
 	return bytes, nil
+}
+
+func DecodePacket(rawData []byte) (Packet, error) {
+	return Packet{}, nil
+}
+
+func DecodePackets(rawData []byte) ([]Packet, error) {
+	var packets []Packet
+
+	for _, packetData := range bytes.Split(rawData, []byte{SeperatorCharacter}) {
+		packet, err := DecodePacket(packetData)
+
+		if err != nil {
+			return nil, err
+		}
+
+		packets = append(packets, packet)
+	}
+
+	return packets, nil
 }

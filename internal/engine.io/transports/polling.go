@@ -1,6 +1,7 @@
 package transports
 
 import (
+	"io"
 	"net/http"
 
 	engineio "github.com/rouzbehsbz/gopher.io/internal/engine.io"
@@ -20,6 +21,24 @@ func (p *PollingTransport) Name() string {
 func (p *PollingTransport) Handle(s *engineio.Socket) {
 	switch s.R.Method {
 	case http.MethodPost:
+		bodyBytes, err := io.ReadAll(s.R.Body)
+
+		if err != nil {
+			http.Error(s.W, "can't read the request body.", http.StatusInternalServerError)
+			return
+		}
+
+		packets, err := engineio.DecodePackets(bodyBytes)
+
+		if err != nil {
+			http.Error(s.W, "can't decode the packet.", http.StatusInternalServerError)
+			return
+		}
+
+		for _, packet := range packets {
+			s.ReceivingPackets <- packet
+		}
+
 		s.W.Header().Set("Content-Type", "text/plain; charset=UTF-8")
 		s.W.Write([]byte("ok"))
 

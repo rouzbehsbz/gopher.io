@@ -79,6 +79,11 @@ func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if sid == "" {
+		if r.Method != http.MethodGet {
+			s.ErrorResponse(w, BadHandshakeMethodErrorCode)
+			return
+		}
+
 		newSid, err := s.AddSocket(w, r, serverTransport)
 
 		if err != nil {
