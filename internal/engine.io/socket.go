@@ -15,6 +15,8 @@ type Socket struct {
 	R                *http.Request
 	SendingPackets   chan Packet
 	ReceivingPackets chan Packet
+
+	lastPongTime time.Time
 }
 
 func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter, pingInterval time.Duration, pingTimeout time.Duration) (*Socket, error) {
@@ -33,6 +35,12 @@ func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter, pi
 	}
 
 	go s.heartbeat(pingInterval, pingTimeout)
+	go func() {
+		for packet := range s.ReceivingPackets {
+			s.handlePacket(packet)
+		}
+	}()
+
 	s.Sid = sid
 
 	return s, nil
@@ -61,6 +69,13 @@ func (s *Socket) Handle(w http.ResponseWriter, r *http.Request) {
 
 func (s *Socket) Send(packet Packet) {
 	s.SendingPackets <- packet
+}
+
+func (s *Socket) handlePacket(packet Packet) {
+	switch packet.Type {
+	case PacketPongType:
+		s.lastPongTime = time.Now()
+	}
 }
 
 func (s *Socket) heartbeat(pingInterval time.Duration, pingTimeout time.Duration) {

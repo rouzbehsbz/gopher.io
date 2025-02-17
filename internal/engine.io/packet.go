@@ -87,7 +87,17 @@ func EncodePackets(packets []Packet) ([]byte, error) {
 }
 
 func DecodePacket(rawData []byte) (Packet, error) {
-	return Packet{}, nil
+	if len(rawData) == 0 {
+		return Packet{}, errors.New("empty packet data")
+	}
+
+	packetType := PacketType(rawData[0])
+	data := rawData[1:]
+
+	return Packet{
+		Type:    packetType,
+		RawData: BufferToRawDate(data),
+	}, nil
 }
 
 func DecodePackets(rawData []byte) ([]Packet, error) {
