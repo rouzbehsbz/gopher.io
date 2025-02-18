@@ -62,6 +62,10 @@ func (s *Server) Listen(address string) {
 }
 
 func (s *Server) HandleHandshake(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
 	eio := r.URL.Query().Get("EIO")
 	sid := r.URL.Query().Get("sid")
 	requestTransport := r.URL.Query().Get("transport")

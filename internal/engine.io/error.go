@@ -29,11 +29,11 @@ var errorMessages = map[ErrorCode]string{
 
 var errorHttpStatusCodes = map[ErrorCode]int{
 	UnknownTransportErrorCode:           http.StatusBadRequest,
-	UnknownSidErrorCode:                 http.StatusUnauthorized,
-	BadHandshakeMethodErrorCode:         http.StatusMethodNotAllowed,
+	UnknownSidErrorCode:                 http.StatusBadRequest,
+	BadHandshakeMethodErrorCode:         http.StatusBadRequest,
 	BadRequestErrorCode:                 http.StatusBadRequest,
-	ForbiddenErrorCode:                  http.StatusForbidden,
-	UnsupportedProtocolVersionErrorCode: http.StatusUpgradeRequired,
+	ForbiddenErrorCode:                  http.StatusBadRequest,
+	UnsupportedProtocolVersionErrorCode: http.StatusBadRequest,
 }
 
 func GetErrorMessage(errorCode ErrorCode) string {
