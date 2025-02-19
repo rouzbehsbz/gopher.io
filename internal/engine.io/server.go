@@ -50,8 +50,8 @@ func NewServer(opt ServerOpt) *Server {
 		sockets:        make(map[string]*Socket),
 		transports:     transports,
 		transportNames: transportNames,
-		pingInterval:   10000,
-		pingTimeout:    20000,
+		pingInterval:   10000 * time.Millisecond,
+		pingTimeout:    25000 * time.Millisecond,
 		maxPayload:     1000000,
 	}
 }

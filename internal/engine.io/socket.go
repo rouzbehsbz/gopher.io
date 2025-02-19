@@ -26,6 +26,7 @@ func NewSocket(w http.ResponseWriter, r *http.Request, transport Transporter, pi
 		R:                r,
 		SendingPackets:   make(chan Packet, 10),
 		ReceivingPackets: make(chan Packet, 10),
+		lastPongTime:     time.Now(),
 	}
 
 	sid, err := s.generateSid()
@@ -78,10 +79,12 @@ func (s *Socket) handlePacket(packet Packet) {
 	}
 }
 
-func (s *Socket) heartbeat(pingInterval time.Duration, pingTimeout time.Duration) {
-	ticker := time.NewTicker(pingInterval * time.Millisecond)
+func (s *Socket) heartbeat(pingInterval, pingTimeout time.Duration) {
+	ticker := time.NewTicker(pingInterval)
+	timeoutTicker := time.NewTicker(pingTimeout)
 
 	defer ticker.Stop()
+	defer timeoutTicker.Stop()
 
 	for {
 		select {
@@ -90,6 +93,11 @@ func (s *Socket) heartbeat(pingInterval time.Duration, pingTimeout time.Duration
 				Type:    PacketPingType,
 				RawData: []byte{},
 			})
+		case <-timeoutTicker.C:
+			if time.Since(s.lastPongTime) > pingTimeout {
+				println("closed")
+				return
+			}
 		}
 	}
 }
